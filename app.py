@@ -3,10 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 import PyPDF2
 import io
+import os
+from dotenv import load_dotenv
+
+# 1. This is the magic line that connects your .env file!
+load_dotenv()
 
 app = FastAPI()
 
-# frontend to talk to this backend securely
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -14,11 +18,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- AI SETUP ---
 
-GEMINI_API_KEY = "" 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
+
 
 # --- ENDPOINT 1: Read the PDF Resume ---
 @app.post("/extract-resume")
