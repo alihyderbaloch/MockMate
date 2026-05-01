@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockMate - AI Interview Coach</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h1 { color: #333; text-align: center; }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #chat-box { height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background: #fafafa; margin-bottom: 10px; }
+        .message { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .ai-msg { background-color: #e3f2fd; text-align: left; }
+        .user-msg { background-color: #d4edda; text-align: right; }
+        .mic-btn { background-color: #28a745; }
+        .mic-btn:hover { background-color: #1e7e34; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 MockMate Interviewer</h1>
+    
+    <label>What role are you applying for?</label>
+    <input type="text" id="role" placeholder="e.g., Software Engineer, Marketing Intern">
+    
+    <label>Upload your Resume (PDF)</label>
+    <input type="file" id="resume" accept="application/pdf">
+    
+    <button onclick="startSetup()">1. Setup Interview</button>
+
+    <div id="chat-box"></div>
+
+    <button id="mic-btn" class="mic-btn" onclick="startListening()" disabled>🎙️ Click to Speak</button>
+</div>
+
+<script>
+    let resumeText = "";
+
+    // 1. Send PDF to Backend to Extract Text
+    async function startSetup() {
+        const fileInput = document.getElementById('resume');
+        const role = document.getElementById('role').value;
+
+        if (!fileInput.files[0] || !role) {
+            alert("Please provide a role and upload a resume.");
+            return;
+        }
+
+        addMessage("System", "Reading your resume...");
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        // Call our Python backend
+        const response = await fetch("http://127.0.0.1:8000/extract-resume", {
+            method: "POST",
+            body: formData
+        });
+        
+        const data = await response.json();
+        resumeText = data.resume_text;
+
+        addMessage("System", "Resume loaded! Starting interview...");
+        document.getElementById('mic-btn').disabled = false;
+        
+        // Kick off the first question
+        sendToAI("Hello, I am ready for the interview."); 
+    }
+
+    // 2. The Free Speech-to-Text (Listen to User)
+    function startListening() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        
+        document.getElementById('mic-btn').innerText = "🔴 Listening...";
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById('mic-btn').innerText = "🎙️ Click to Speak";
+            addMessage("You", transcript);
+            sendToAI(transcript);
+        };
+
+        recognition.start();
+    }
+
+    // 3. Send User Text to Python Backend
+    async function sendToAI(userMessage) {
+        const role = document.getElementById('role').value;
+        const formData = new FormData();
+        formData.append("user_message", userMessage);
+        formData.append("resume_text", resumeText);
+        formData.append("role", role);
+
+        const response = await fetch("http://127.0.0.1:8000/chat", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+        addMessage("Interviewer", data.ai_response);
+        speakText(data.ai_response); // Read it out loud!
+    }
+
+    // 4. The Free Text-to-Speech (AI Speaks)
+    function speakText(text) {
+        const speech = new SpeechSynthesisUtterance(text);
+        window.speechSynthesis.speak(speech);
+    }
+
+    // Helper: Add text to the chat window
+    function addMessage(sender, text) {
+        const chatBox = document.getElementById('chat-box');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${sender === 'You' ? 'user-msg' : 'ai-msg'}`;
+        msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
