@@ -3,120 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MockMate - AI Interview Coach</title>
+    <title>MockMate | Pro Video Interview</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
-        h1 { color: #333; text-align: center; }
-        input, select, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        #chat-box { height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px; background: #fafafa; margin-bottom: 10px; }
-        .message { margin: 10px 0; padding: 10px; border-radius: 5px; }
-        .ai-msg { background-color: #e3f2fd; text-align: left; }
-        .user-msg { background-color: #d4edda; text-align: right; }
-        .mic-btn { background-color: #28a745; }
-        .mic-btn:hover { background-color: #1e7e34; }
+        :root { --primary: #0f172a; --accent: #3b82f6; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .app-container { background: white; width: 100%; max-width: 1000px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 30px; }
+        h1 { text-align: center; color: var(--primary); font-size: 28px; margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: #64748b; margin-bottom: 30px; }
+        
+        /* Setup Panel */
+        .setup-panel { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-top: 15px; color: #475569; }
+        input[type="text"], input[type="file"], textarea, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: inherit; }
+        textarea { resize: vertical; height: 80px; }
+        
+        button { width: 100%; padding: 14px; margin-top: 20px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-mic { background-color: #10b981; color: white; }
+        .btn-mic:hover { background-color: #059669; }
+        .btn-danger { background-color: #ef4444; color: white; margin-top: 10px;}
+        .btn-danger:hover { background-color: #dc2626; }
+
+        /* Interview Layout (Split Screen) */
+        .interview-area { display: none; display: flex; gap: 20px; margin-top: 20px; }
+        .video-section { flex: 1; display: flex; flex-direction: column; align-items: center; }
+        video { width: 100%; max-width: 400px; border-radius: 12px; border: 4px solid var(--primary); background: #000; transform: scaleX(-1); }
+        .video-label { margin-top: 10px; font-weight: bold; color: #ef4444; display: flex; align-items: center; gap: 5px; }
+        .dot { height: 10px; width: 10px; background-color: #ef4444; border-radius: 50%; display: inline-block; animation: blink 1.5s infinite; }
+        
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+
+        .chat-section { flex: 1.5; display: flex; flex-direction: column; }
+        #chat-box { height: 350px; overflow-y: auto; padding: 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
+        .msg { padding: 12px 18px; border-radius: 16px; max-width: 85%; line-height: 1.5; font-size: 14px; }
+        .ai-msg { background: #e0f2fe; align-self: flex-start; border-bottom-left-radius: 4px; color: #0369a1; }
+        .user-msg { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+
+        /* Scorecard */
+        #scorecard-panel { display: none; margin-top: 20px; padding: 25px; background: #fffbeb; border: 2px solid #fcd34d; border-radius: 12px; }
+        #scorecard-content h3 { color: #b45309; margin-top: 15px; border-bottom: 1px solid #fcd34d; padding-bottom: 5px;}
+        #loading { display: none; text-align: center; color: var(--accent); font-weight: bold; margin-top: 10px; font-size: 18px;}
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🚀 MockMate Interviewer</h1>
+<div class="app-container">
+    <h1>🚀 MockMate Pro</h1>
+    <p class="subtitle">AI Interview Coach with Live Camera & JD Analysis</p>
     
-    <label>What role are you applying for?</label>
-    <input type="text" id="role" placeholder="e.g., Software Engineer, Marketing Intern">
-    
-    <label>Upload your Resume (PDF)</label>
-    <input type="file" id="resume" accept="application/pdf">
-    
-    <button onclick="startSetup()">1. Setup Interview</button>
+    <div class="setup-panel" id="setup-panel">
+        <label>Target Job Title</label>
+        <input type="text" id="role" placeholder="e.g., Senior Python Developer">
+        
+        <label>Job Description (Paste requirements here)</label>
+        <textarea id="jd" placeholder="e.g., Must have 3 years experience in FastAPI, REST APIs, and Docker..."></textarea>
+        
+        <label>Interview Duration (Number of Questions)</label>
+        <select id="duration">
+            <option value="3" selected>Short (3 Questions - Default)</option>
+            <option value="5">Standard (5 Questions)</option>
+            <option value="8">Detailed (8 Questions)</option>
+        </select>
 
-    <div id="chat-box"></div>
+        <label>Upload Your Resume (PDF)</label>
+        <input type="file" id="resume" accept="application/pdf">
+        
+        <button class="btn-primary" id="setup-btn" onclick="startSetup()">Start Live Interview</button>
+        <div id="loading">Analyzing JD and Resume... Please wait ⏳</div>
+    </div>
 
-    <button id="mic-btn" class="mic-btn" onclick="startListening()" disabled>🎙️ Click to Speak</button>
+    <div id="interview-container" style="display: none;">
+        <div class="interview-area">
+            
+            <div class="video-section">
+                <video id="user-video" autoplay playsinline muted></video>
+                <div class="video-label"><span class="dot"></span> Live Camera Active</div>
+            </div>
+
+            <div class="chat-section">
+                <div id="chat-box"></div>
+                <div id="controls">
+                    <button id="mic-btn" class="btn-mic" onclick="startListening()">🎙️ Click to Speak Answer</button>
+                    <button id="end-btn" class="btn-danger" onclick="endInterview()">🛑 Finish & Get Scorecard</button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <div id="scorecard-panel">
+        <h2>📊 Comprehensive Interview Analysis</h2>
+        <div id="scorecard-content"></div>
+    </div>
 </div>
 
 <script>
     let resumeText = "";
+    let chatHistory = ""; 
+    let recognition;
+    let questionCount = 0;
+    let maxQuestions = 3;
 
-    // 1. Send PDF to Backend to Extract Text
+    // 1. Setup Phase
     async function startSetup() {
         const fileInput = document.getElementById('resume');
         const role = document.getElementById('role').value;
+        const jd = document.getElementById('jd').value;
+        maxQuestions = parseInt(document.getElementById('duration').value);
 
-        if (!fileInput.files[0] || !role) {
-            alert("Please provide a role and upload a resume.");
-            return;
+        if (!fileInput.files[0] || !role || !jd) { 
+            alert("Please provide Role, Job Description, and Resume!"); 
+            return; 
         }
 
-        addMessage("System", "Reading your resume...");
+        document.getElementById('setup-btn').style.display = "none";
+        document.getElementById('loading').style.display = "block";
+
         const formData = new FormData();
         formData.append("file", fileInput.files[0]);
 
-        // Call our Python backend
-        const response = await fetch("http://127.0.0.1:8000/extract-resume", {
-            method: "POST",
-            body: formData
-        });
-        
+        const response = await fetch("http://127.0.0.1:8000/extract-resume", { method: "POST", body: formData });
         const data = await response.json();
         resumeText = data.resume_text;
 
-        addMessage("System", "Resume loaded! Starting interview...");
-        document.getElementById('mic-btn').disabled = false;
+        document.getElementById('setup-panel').style.display = "none";
+        document.getElementById('loading').style.display = "none";
+        document.getElementById('interview-container').style.display = "block";
         
-        // Kick off the first question
-        sendToAI("Hello, I am ready for the interview."); 
+        // Start Webcam
+        startCamera();
+
+        const greeting = `Hello! I have analyzed your resume against the ${role} job description. We will have a ${maxQuestions}-question interview today. Let's start. Tell me a bit about yourself.`;
+        addMessage("AI", greeting);
+        chatHistory += `AI: ${greeting}\n`;
+        speakText(greeting);
     }
 
-    // 2. The Free Speech-to-Text (Listen to User)
+    // 2. Start Webcam Function
+    function startCamera() {
+        const videoElement = document.getElementById('user-video');
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function(stream) {
+                videoElement.srcObject = stream;
+            })
+            .catch(function(error) {
+                console.log("Camera error:", error);
+                alert("Please allow camera access for the full experience.");
+            });
+        }
+    }
+
+    // 3. Speech to Text
     function startListening() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        
-        document.getElementById('mic-btn').innerText = "🔴 Listening...";
+        recognition = new SpeechRecognition();
+        document.getElementById('mic-btn').innerText = "🔴 Listening... Speak now";
+        document.getElementById('mic-btn').style.backgroundColor = "#ef4444";
 
         recognition.onresult = function(event) {
             const transcript = event.results[0][0].transcript;
-            document.getElementById('mic-btn').innerText = "🎙️ Click to Speak";
+            document.getElementById('mic-btn').innerText = "🎙️ Click to Speak Answer";
+            document.getElementById('mic-btn').style.backgroundColor = "#10b981";
             addMessage("You", transcript);
+            chatHistory += `Candidate: ${transcript}\n`; 
             sendToAI(transcript);
         };
-
         recognition.start();
     }
 
-    // 3. Send User Text to Python Backend
+    // 4. Send to Backend
     async function sendToAI(userMessage) {
+        document.getElementById('mic-btn').disabled = true;
+        document.getElementById('mic-btn').innerText = "⏳ AI Interviewer is thinking...";
+
         const role = document.getElementById('role').value;
+        const jd = document.getElementById('jd').value;
+        
         const formData = new FormData();
         formData.append("user_message", userMessage);
         formData.append("resume_text", resumeText);
         formData.append("role", role);
+        formData.append("job_description", jd);
+        formData.append("chat_history", chatHistory);
+        formData.append("question_count", questionCount);
+        formData.append("max_questions", maxQuestions);
 
-        const response = await fetch("http://127.0.0.1:8000/chat", {
-            method: "POST",
-            body: formData
-        });
-
+        const response = await fetch("http://127.0.0.1:8000/chat", { method: "POST", body: formData });
         const data = await response.json();
-        addMessage("Interviewer", data.ai_response);
-        speakText(data.ai_response); // Read it out loud!
+        
+        addMessage("AI", data.ai_response);
+        chatHistory += `AI: ${data.ai_response}\n`; 
+        speakText(data.ai_response); 
+
+        questionCount++; // Increase the counter
+
+        document.getElementById('mic-btn').disabled = false;
+        document.getElementById('mic-btn').innerText = "🎙️ Click to Speak Answer";
     }
 
-    // 4. The Free Text-to-Speech (AI Speaks)
+    // 5. Text to Speech
     function speakText(text) {
         const speech = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.speak(speech);
     }
 
-    // Helper: Add text to the chat window
+    // 6. End and Get Scorecard
+    async function endInterview() {
+        if (recognition) recognition.stop();
+        
+        // Stop Camera
+        const videoElement = document.getElementById('user-video');
+        if (videoElement.srcObject) {
+            videoElement.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        document.getElementById('interview-container').style.display = "none";
+        document.getElementById('setup-panel').style.display = "block"; // Show loading area again
+        document.getElementById('setup-panel').innerHTML = `<div id="loading" style="display:block; font-size:24px;">📊 Analyzing Interview Data & JD Alignment... Please wait!</div>`;
+
+        const role = document.getElementById('role').value;
+        const jd = document.getElementById('jd').value;
+        
+        const formData = new FormData();
+        formData.append("chat_history", chatHistory);
+        formData.append("role", role);
+        formData.append("job_description", jd);
+
+        const response = await fetch("http://127.0.0.1:8000/scorecard", { method: "POST", body: formData });
+        const data = await response.json();
+
+        document.getElementById('setup-panel').style.display = "none";
+        document.getElementById('scorecard-panel').style.display = "block";
+        
+        let formattedScore = data.scorecard
+            .replace(/### (.*)/g, '<h3>$1</h3>')
+            .replace(/\*\*(.*)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*)/g, '<li>$1</li>')
+            .replace(/\n/g, '<br>');
+
+        document.getElementById('scorecard-content').innerHTML = formattedScore;
+    }
+
+    // Helper
     function addMessage(sender, text) {
         const chatBox = document.getElementById('chat-box');
         const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${sender === 'You' ? 'user-msg' : 'ai-msg'}`;
-        msgDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+        msgDiv.className = `msg ${sender === 'You' ? 'user-msg' : 'ai-msg'}`;
+        msgDiv.innerHTML = `<strong>${sender === 'You' ? 'You' : 'AI Interviewer'}:</strong><br>${text}`;
         chatBox.appendChild(msgDiv);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
