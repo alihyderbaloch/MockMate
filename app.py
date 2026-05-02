@@ -6,7 +6,7 @@ import io
 import os
 from dotenv import load_dotenv
 
-# 1. This is the magic line that connects your .env file!
+# Load secret key
 load_dotenv()
 
 app = FastAPI()
@@ -18,40 +18,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") 
+# --- AI SETUP ---
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-
-# --- ENDPOINT 1: Read the PDF Resume ---
+# Endpoint 1: Extract Resume
 @app.post("/extract-resume")
 async def extract_resume(file: UploadFile = File(...)):
-    # This reads the uploaded PDF and extracts the text
     pdf_reader = PyPDF2.PdfReader(io.BytesIO(await file.read()))
     text = ""
     for page in pdf_reader.pages:
         text += page.extract_text()
     return {"resume_text": text}
 
-# --- ENDPOINT 2: Chat with the AI ---
+# Endpoint 2: The Interview Chat (Now with Memory!)
 @app.post("/chat")
-async def chat(user_message: str = Form(...), resume_text: str = Form(...), role: str = Form(...)):
-    # "System Prompt" that gives the AI its personality and rules
+async def chat(user_message: str = Form(...), resume_text: str = Form(...), role: str = Form(...), chat_history: str = Form(...)):
     prompt = f"""
-    You are an expert AI recruiter. The user is applying for the role of {role}.
-    Here is their resume data: {resume_text}
+    You are an expert AI recruiter. The user is applying for: {role}.
+    Here is their resume: {resume_text}
     
-    The user just said: "{user_message}"
+    Here is the interview history so far:
+    {chat_history}
+    
+    The user just answered: "{user_message}"
     
     Rule 1: Act exactly like a human interviewer.
-    Rule 2: Keep your response short (2-3 sentences maximum).
-    Rule 3: Ask ONE relevant interview question based on their resume or role, or respond to their answer and ask the next question.
+    Rule 2: Keep your response short (2-3 sentences max).
+    Rule 3: Evaluate their answer internally, and then ask the NEXT relevant interview question.
     """
-    
-    # Send the prompt to Gemini and get the response
     response = model.generate_content(prompt)
     return {"ai_response": response.text}
 
-
-# uvicorn backend:app --reload
+# Endpoint 3: The Final Scorecard (The Wow Factor!)
+@app.post("/scorecard")
+async def generate_scorecard(chat_history: str = Form(...), role: str = Form(...)):
+    prompt = f"""
+    You are a Senior Tech Recruiter. Review this entire interview transcript for a {role} position.
+    Transcript: {chat_history}
+    
+    Provide a professional evaluation scorecard. Format it cleanly using Markdown.
+    Include these exact headings:
+    ### 🎯 Final Decision (Hire, No Hire, or Shortlist)
+    ### 💪 Top Strengths
+    ### 📈 Areas for Improvement
+    ### 💡 Expert Advice for Next Time
+    """
+    response = model.generate_content(prompt)
+    return {"scorecard": response.text}
